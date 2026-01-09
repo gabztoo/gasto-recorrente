@@ -109,23 +109,24 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onAnalyze, isAnalyzing })
       <div className="tech-panel rounded-xl overflow-hidden shadow-2xl">
         <div className="p-8">
           
-          {/* Privacy Toggle */}
-          <div className="flex items-center justify-between bg-surfaceHighlight/50 p-4 rounded-lg border border-white/5 mb-8">
-            <div className="flex items-center">
-               <div className={`p-2 rounded mr-4 ${privacyMode ? 'text-primary' : 'text-gray-500'}`}>
-                  {privacyMode ? <EyeOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
-               </div>
-               <div>
-                  <h4 className="text-white text-sm font-medium">Modo Volátil (RAM Only)</h4>
-                  <p className="text-xs text-gray-500">Dados são descartados imediatamente após o parse.</p>
-               </div>
+          {/* Privacy Banner */}
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-8">
+            <div className="flex items-start">
+              <div className="p-2 rounded-full bg-emerald-500/20 mr-4">
+                <Shield className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-emerald-400 text-sm font-semibold flex items-center">
+                  <EyeOff className="w-4 h-4 mr-2" />
+                  Sua privacidade é nossa prioridade
+                </h4>
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                  Seus arquivos <strong className="text-white">não são salvos</strong> em nenhum servidor. 
+                  O processamento é feito localmente no seu navegador e os dados são <strong className="text-white">descartados imediatamente</strong> após a análise. 
+                  Nós nunca teremos acesso ao conteúdo do seu extrato.
+                </p>
+              </div>
             </div>
-            <button 
-              onClick={() => setPrivacyMode(!privacyMode)}
-              className={`w-10 h-5 flex items-center rounded-full p-1 duration-300 ease-in-out ${privacyMode ? 'bg-primary' : 'bg-gray-700'}`}
-            >
-              <div className={`bg-white w-3 h-3 rounded-full shadow-md transform duration-300 ease-in-out ${privacyMode ? 'translate-x-5' : ''}`} />
-            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

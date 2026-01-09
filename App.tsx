@@ -42,12 +42,18 @@ const App: React.FC = () => {
       const currentUser = authService.getCurrentUser();
       const savedData = localStorage.getItem('subdetector_analysis_cache');
       
-      if (savedData && currentUser) {
+      console.log('Payment return detected:', { currentUser: !!currentUser, savedData: !!savedData });
+      
+      if (savedData) {
         try {
           const parsed = JSON.parse(savedData);
           setAnalysisData(parsed);
-          setUser(currentUser);
-          historyService.saveToHistory(currentUser.id, parsed);
+          
+          if (currentUser) {
+            setUser(currentUser);
+            historyService.saveToHistory(currentUser.id, parsed);
+          }
+          
           setView(AppView.DASHBOARD);
           
           // Mostrar notificação de sucesso
@@ -59,7 +65,13 @@ const App: React.FC = () => {
           setTimeout(() => setNotification(null), 5000);
         } catch (e) {
           console.error("Erro ao recuperar dados salvos", e);
+          setNotification({ type: 'error', message: 'Erro ao recuperar análise. Por favor, tente novamente.' });
+          setTimeout(() => setNotification(null), 5000);
         }
+      } else {
+        console.warn('Nenhuma análise encontrada no cache');
+        setNotification({ type: 'error', message: 'Sessão expirada. Por favor, faça a análise novamente.' });
+        setTimeout(() => setNotification(null), 5000);
       }
       
       // Limpar dados de pagamento pendente e URL
@@ -227,7 +239,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {view === AppView.DASHBOARD && analysisData && user && (
+        {view === AppView.DASHBOARD && analysisData && (
           <Dashboard 
             currentAnalysis={analysisData} 
             user={user}
