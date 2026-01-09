@@ -1,0 +1,5 @@
+{
+  "name": "Gasto Recorrente",
+  "description": "Analise extratos bancários para encontrar assinaturas ocultas e economizar dinheiro. Identificação inteligente via IA.",
+  "requestFramePermissions": []
+}
