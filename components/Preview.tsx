@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Lock, Check, AlertCircle, ArrowRight, TrendingDown, Ban, Shield, Tv, Music, Gamepad2, Dumbbell, Cloud, CreditCard } from 'lucide-react';
+import { Lock, Check, AlertCircle, ArrowRight, TrendingDown, Ban, Shield } from 'lucide-react';
 import { AnalysisResult } from '../types';
 import PaymentModal from './PaymentModal';
+import ServiceIcon from './ServiceIcon';
 
 interface PreviewProps {
   data: AnalysisResult;
@@ -9,44 +10,6 @@ interface PreviewProps {
 }
 
 const PRICE = 10.00; // Preço do relatório em R$
-
-// Cores para serviços conhecidos
-const SERVICE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  'netflix': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
-  'spotify': { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
-  'disney': { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-  'amazon': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-  'prime': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  'hbo': { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-  'adobe': { bg: 'bg-red-600/20', text: 'text-red-500', border: 'border-red-600/30' },
-  'microsoft': { bg: 'bg-blue-600/20', text: 'text-blue-500', border: 'border-blue-600/30' },
-  'google': { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
-  'apple': { bg: 'bg-gray-400/20', text: 'text-gray-300', border: 'border-gray-400/30' },
-  'youtube': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
-  'chatgpt': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'openai': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'smart fit': { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-  'gympass': { bg: 'bg-pink-500/20', text: 'text-pink-400', border: 'border-pink-500/30' },
-};
-
-// Ícone por categoria
-const getCategoryIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'streaming': return <Tv className="w-3 h-3" />;
-    case 'software/app': return <Cloud className="w-3 h-3" />;
-    case 'games': return <Gamepad2 className="w-3 h-3" />;
-    case 'saúde': return <Dumbbell className="w-3 h-3" />;
-    default: return <CreditCard className="w-3 h-3" />;
-  }
-};
-
-const getServiceStyle = (name: string) => {
-  const nameLower = name.toLowerCase();
-  for (const [key, style] of Object.entries(SERVICE_COLORS)) {
-    if (nameLower.includes(key)) return style;
-  }
-  return { bg: 'bg-white/10', text: 'text-gray-300', border: 'border-white/20' };
-};
 
 const Preview: React.FC<PreviewProps> = ({ data, onPaymentSuccess }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -91,18 +54,15 @@ const Preview: React.FC<PreviewProps> = ({ data, onPaymentSuccess }) => {
                   <div className="mt-6">
                     <p className="text-xs font-mono text-gray-500 mb-3 uppercase">Serviços Detectados</p>
                     <div className="flex flex-wrap gap-2">
-                      {data.items.slice(0, 3).map((item, index) => {
-                        const style = getServiceStyle(item.name);
-                        return (
-                          <div 
-                            key={index}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${style.bg} ${style.text} ${style.border}`}
-                          >
-                            {getCategoryIcon(item.category)}
-                            <span>{item.name}</span>
-                          </div>
-                        );
-                      })}
+                      {data.items.slice(0, 3).map((item, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 bg-white/5 text-xs font-medium text-gray-300"
+                        >
+                          <ServiceIcon serviceName={item.name} category={item.category} size="sm" />
+                          <span>{item.name}</span>
+                        </div>
+                      ))}
                       {data.items.length > 3 && (
                         <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/20 bg-white/10 text-gray-400 text-xs font-medium">
                           +{data.items.length - 3}

@@ -1,12 +1,12 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { AnalysisResult, SubscriptionItem } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { 
   Download, ExternalLink, Share2, Copy, Check,
-  AppWindow, Dumbbell, Gamepad2, Cloud, Zap, 
-  Clapperboard, Music, Car, Utensils, ShoppingCart, PenTool, Bot, HardDrive, Smartphone,
-  FileText, Image as ImageIcon, RefreshCw
+  RefreshCw, TrendingDown
 } from 'lucide-react';
+import ServiceIcon from './ServiceIcon';
+import AlternativesPanel from './AlternativesPanel';
 
 interface DashboardProps {
   currentAnalysis: AnalysisResult;
@@ -17,7 +17,8 @@ interface DashboardProps {
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
 
 const Dashboard: React.FC<DashboardProps> = ({ currentAnalysis, onReset }) => {
-  const [copied, setCopied] = React.useState(false);
+  const [copied, setCopied] = useState(false);
+  const [selectedService, setSelectedService] = useState<{name: string; cost: number} | null>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   // Aggregate data for chart
@@ -102,46 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentAnalysis, onReset }) => {
     URL.revokeObjectURL(url);
   };
 
-  // Styles Updated to be less "Glowy" and more "Flat/Clean"
-  const getServiceStyles = (name: string, category: string) => {
-    const n = name.toLowerCase();
 
-    if (n.includes('netflix') || n.includes('hbo') || n.includes('disney') || n.includes('prime video')) {
-        return { icon: <Clapperboard className="w-5 h-5" />, style: "bg-red-500/10 text-red-400 border-red-500/20" };
-    }
-    if (n.includes('spotify') || n.includes('deezer') || n.includes('apple music') || n.includes('youtube music')) {
-        return { icon: <Music className="w-5 h-5" />, style: "bg-green-500/10 text-green-400 border-green-500/20" };
-    }
-    if (n.includes('uber') || n.includes('99') || n.includes('cabify')) {
-        return { icon: <Car className="w-5 h-5" />, style: "bg-zinc-700/30 text-gray-300 border-zinc-600/30" };
-    }
-    if (n.includes('ifood') || n.includes('rappi') || n.includes('zê delivery')) {
-        return { icon: <Utensils className="w-5 h-5" />, style: "bg-red-500/10 text-red-400 border-red-500/20" };
-    }
-    if (n.includes('amazon') || n.includes('mercadolivre') || n.includes('shopee') || n.includes('magalu')) {
-        return { icon: <ShoppingCart className="w-5 h-5" />, style: "bg-orange-500/10 text-orange-400 border-orange-500/20" };
-    }
-    if (n.includes('adobe') || n.includes('figma') || n.includes('canva') || n.includes('photoshop')) {
-        return { icon: <PenTool className="w-5 h-5" />, style: "bg-purple-500/10 text-purple-400 border-purple-500/20" };
-    }
-    if (n.includes('chatgpt') || n.includes('openai') || n.includes('midjourney') || n.includes('claude')) {
-        return { icon: <Bot className="w-5 h-5" />, style: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
-    }
-    if (n.includes('google') || n.includes('drive') || n.includes('storage') || n.includes('icloud') || n.includes('aws')) {
-        return { icon: <HardDrive className="w-5 h-5" />, style: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
-    }
-    if (n.includes('tinder') || n.includes('bumble') || n.includes('badoo')) {
-        return { icon: <Smartphone className="w-5 h-5" />, style: "bg-pink-500/10 text-pink-400 border-pink-500/20" };
-    }
-    if (n.includes('microsoft') || n.includes('office') || n.includes('365')) {
-         return { icon: <AppWindow className="w-5 h-5" />, style: "bg-blue-600/10 text-blue-500 border-blue-600/20" };
-    }
-    
-    return {
-      icon: <Zap className="w-5 h-5" />,
-      style: "bg-surfaceHighlight text-gray-400 border-white/10"
-    };
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 pb-20" ref={dashboardRef}>
@@ -268,16 +230,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentAnalysis, onReset }) => {
             </div>
             
             <div className="space-y-2">
-              {currentAnalysis.items.map((item, idx) => {
-                const { icon, style } = getServiceStyles(item.name, item.category);
-                
-                return (
+              {currentAnalysis.items.map((item, idx) => (
                     <div key={idx} className="bg-surface border border-white/5 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between hover:border-primary/30 transition-colors group">
                         
                         <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${style}`}>
-                                {icon}
-                            </div>
+                            <ServiceIcon serviceName={item.name} category={item.category} size="md" />
                             
                             <div>
                                 <h4 className="font-medium text-white text-sm leading-tight">{item.name}</h4>
@@ -287,26 +244,36 @@ const Dashboard: React.FC<DashboardProps> = ({ currentAnalysis, onReset }) => {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end sm:space-x-8 w-full sm:w-auto pl-14 sm:pl-0">
+                        <div className="flex items-center justify-between sm:justify-end sm:space-x-4 w-full sm:w-auto pl-14 sm:pl-0">
                             <div className="text-right">
                                 <p className="font-semibold text-white text-sm">{formatCurrency(item.monthlyCost)}</p>
                                 <p className="text-[10px] text-gray-500 uppercase">Mensal</p>
                             </div>
                             
                             <button 
-                              className="text-gray-600 hover:text-white transition-colors p-2"
-                              title="Detalhes da Cobrança"
+                              onClick={() => setSelectedService({name: item.name, cost: item.monthlyCost})}
+                              className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/20 transition-colors"
+                              title="Ver como economizar"
                             >
-                                <ExternalLink className="w-4 h-4" />
+                                <TrendingDown className="w-3 h-3" />
+                                <span className="hidden sm:inline">Economizar</span>
                             </button>
                         </div>
                     </div>
-                );
-              })}
+              ))}
             </div>
         </div>
 
       </div>
+      
+      {/* Modal de Alternativas */}
+      {selectedService && (
+        <AlternativesPanel 
+          serviceName={selectedService.name}
+          monthlyCost={selectedService.cost}
+          onClose={() => setSelectedService(null)}
+        />
+      )}
     </div>
   );
 };

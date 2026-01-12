@@ -10,83 +10,91 @@ const mapCategory = (cat: string): string => {
   return 'Outros';
 }
 
+// Pré-processar texto para reduzir tokens (sem limitar tamanho)
+const preprocessText = (text: string): string => {
+  // Remove linhas vazias duplicadas
+  let processed = text.replace(/\n{3,}/g, '\n\n');
+  
+  // Remove espaços extras
+  processed = processed.replace(/[ \t]+/g, ' ');
+  
+  // Remove caracteres especiais repetidos (separadores)
+  processed = processed.replace(/[=\-_]{3,}/g, '---');
+  
+  // Remove linhas que são só espaços
+  processed = processed.replace(/^\s+$/gm, '');
+  
+  return processed.trim();
+};
+
 export const analyzeStatement = async (rawText: string): Promise<AnalysisResult> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Pré-processa o texto para economizar tokens
+    const cleanText = preprocessText(rawText);
 
-    // Define the schema for structured output
+    // Schema simplificado para resposta menor
     const subscriptionSchema = {
       type: Type.OBJECT,
       properties: {
-        subscriptions: {
+        subs: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              name: { type: Type.STRING, description: "Nome limpo do serviço (ex: Netflix, Google Storage, Tinder)" },
-              monthlyCost: { type: Type.NUMBER, description: "Valor mensal detectado ou média se variar" },
-              category: { type: Type.STRING, description: "Categoria do serviço" },
-              originalText: { type: Type.STRING, description: "Exemplos do texto original encontrado" },
-              frequency: { type: Type.STRING, description: "Mensal, Anual ou Esporádico" }
+              n: { type: Type.STRING, description: "Nome do serviço" },
+              v: { type: Type.NUMBER, description: "Valor mensal" },
+              c: { type: Type.STRING, description: "Categoria: stream/soft/saude/game/outro" }
             },
-            required: ["name", "monthlyCost", "category", "originalText"]
+            required: ["n", "v", "c"]
           }
         }
       }
     };
 
-    const prompt = `
-      Você é um especialista financeiro focado em encontrar "dinheiro desperdiçado" em assinaturas recorrentes.
-      
-      O usuário forneceu abaixo o texto de faturas/extratos bancários. O texto pode conter dados de UM ou MÚLTIPLOS meses concatenados (ex: Janeiro, Fevereiro, Março).
-      
-      SUA MISSÃO:
-      Identificar transações que são ASSINATURAS recorrentes (SaaS, Streaming, Apps, Academias, Clubes).
-      
-      REGRAS CRUCIAIS DE RECORRÊNCIA:
-      1. Se houver dados de múltiplos meses, PRIORIZE itens que aparecem em meses diferentes com valor igual ou muito próximo. Isso é a prova definitiva de assinatura.
-      2. Se houver apenas um mês, use seu conhecimento de nomes de serviços (Netflix, Spotify, Adobe) para identificar.
-      
-      ATENÇÃO PARA NOMES CAMUFLADOS:
+    // Prompt otimizado e mais curto
+    const prompt = `Analise o extrato bancário e liste APENAS assinaturas recorrentes (Netflix, Spotify, Adobe, etc).
+    ATENÇÃO PARA NOMES CAMUFLADOS:
       - "Apple.com/Bill" ou "Apple Services"
       - "Google *Services", "Google *Storage", "Google Play"
       - "Paypal *NomeDoServico"
       - "PAGSEGURO *Nome", "MP *Nome", "IUGU *Nome"
       - "Amazon Prime", "Amazon Digital"
-      
-      FILTRAGEM:
-      - Ignore: iFood, Uber (viagens), Posto, Supermercado, Farmácia, Transferências PIX para pessoas físicas.
-      - Inclua: Adobe, Microsoft, ChatGPT, Tinder, Gympass, Smart Fit, HBO, Disney+.
-      
-      Texto para análise (pode incluir marcadores como '=== INÍCIO FATURA ==='):
-      """
-      ${rawText.substring(0, 25000)} 
-      """
-    `;
+    
+
+IGNORAR: iFood, Uber, PIX, transferências, compras únicas.
+INCLUIR: Streaming, SaaS, Apps, Academias, Jogos.
+
+Texto:
+"""
+${cleanText}
+"""`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash', // Modelo mais eficiente
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: subscriptionSchema,
-        thinkingConfig: { thinkingBudget: 0 } // Disable thinking for faster response
+        temperature: 0.1, // Mais determinístico = menos tokens
+        maxOutputTokens: 1024, // Limita resposta
       }
     });
 
     const resultText = response.text;
     if (!resultText) throw new Error("Falha ao gerar resposta da IA");
 
-    const parsedData = JSON.parse(resultText) as { subscriptions: { name: string, monthlyCost: number, category: string, originalText: string }[] };
+    const parsedData = JSON.parse(resultText) as { subs: { n: string, v: number, c: string }[] };
     
     // Transform into our internal type
-    const items: SubscriptionItem[] = parsedData.subscriptions.map(sub => ({
-      name: sub.name,
-      monthlyCost: sub.monthlyCost,
-      annualCost: sub.monthlyCost * 12,
-      category: mapCategory(sub.category),
+    const items: SubscriptionItem[] = parsedData.subs.map(sub => ({
+      name: sub.n,
+      monthlyCost: sub.v,
+      annualCost: sub.v * 12,
+      category: mapCategory(sub.c),
       confidence: 0.9,
-      description: sub.originalText
+      description: ''
     }));
 
     const totalMonthly = items.reduce((acc, item) => acc + item.monthlyCost, 0);
