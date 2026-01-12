@@ -1,10 +1,9 @@
-// Serviço de Pagamento - Stripe Payment Links + Mercado Pago (PIX)
-// Configuração sem backend, usando redirecionamento direto
+// Serviço de Pagamento - Stripe Payment Links + AbacatePay (PIX)
+// Configuração híbrida: Stripe via link direto, AbacatePay via API
 
 const STRIPE_PAYMENT_LINK = import.meta.env.VITE_STRIPE_PAYMENT_LINK || '';
-const MERCADOPAGO_PAYMENT_LINK = import.meta.env.VITE_MERCADOPAGO_PAYMENT_LINK || '';
 
-export type PaymentMethod = 'stripe' | 'mercadopago';
+export type PaymentMethod = 'stripe' | 'pix';
 
 export interface PaymentConfig {
   analysisId: string;
@@ -27,54 +26,75 @@ export const paymentService = {
 
   /**
    * Redireciona para Stripe Checkout via Payment Link
-   * IMPORTANTE: Configure a URL de sucesso diretamente no Stripe Dashboard:
-   * - Vá em Payment Links > Editar > After payment
-   * - Configure: http://localhost:3001?payment_success=true&method=stripe
-   * (ou sua URL de produção)
    */
   redirectToStripe: (analysisId: string) => {
     paymentService.preparePayment(analysisId);
     
     if (!STRIPE_PAYMENT_LINK) {
       console.error('VITE_STRIPE_PAYMENT_LINK não configurado');
-      // Fallback para simulação em desenvolvimento
       paymentService.simulatePaymentSuccess();
       return;
     }
 
-    // Stripe Payment Links NÃO suportam success_url via query params
-    // A URL de sucesso deve ser configurada no Dashboard do Stripe
     window.location.href = STRIPE_PAYMENT_LINK;
   },
 
   /**
-   * Redireciona para Mercado Pago (PIX)
+   * Cria cobrança no AbacatePay e redireciona para pagamento PIX
    */
-  redirectToMercadoPago: (analysisId: string) => {
+  redirectToAbacatePay: async (analysisId: string) => {
     paymentService.preparePayment(analysisId);
     
-    if (!MERCADOPAGO_PAYMENT_LINK) {
-      console.error('VITE_MERCADOPAGO_PAYMENT_LINK não configurado');
-      // Fallback para simulação em desenvolvimento
-      paymentService.simulatePaymentSuccess();
-      return;
-    }
+    try {
+      // Chama a API Route para criar a cobrança
+      const response = await fetch('/api/create-billing', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ analysisId })
+      });
 
-    const successUrl = `${getReturnUrl()}?payment_success=true&method=pix`;
-    
-    // Mercado Pago também suporta external_reference para rastreamento
-    const url = new URL(MERCADOPAGO_PAYMENT_LINK);
-    url.searchParams.set('external_reference', analysisId);
-    url.searchParams.set('back_urls[success]', successUrl);
-    
-    window.location.href = url.toString();
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Erro ao criar cobrança:', data.error);
+        // Fallback para simulação em desenvolvimento
+        if (import.meta.env.DEV) {
+          paymentService.simulatePaymentSuccess();
+        }
+        return;
+      }
+
+      if (data.paymentUrl) {
+        // Redireciona para a página de pagamento do AbacatePay
+        window.location.href = data.paymentUrl;
+      } else {
+        console.error('URL de pagamento não retornada');
+        if (import.meta.env.DEV) {
+          paymentService.simulatePaymentSuccess();
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao criar cobrança:', error);
+      // Fallback para simulação em desenvolvimento
+      if (import.meta.env.DEV) {
+        paymentService.simulatePaymentSuccess();
+      }
+    }
+  },
+
+  /**
+   * Alias para manter compatibilidade - usa AbacatePay
+   */
+  redirectToMercadoPago: (analysisId: string) => {
+    return paymentService.redirectToAbacatePay(analysisId);
   },
 
   /**
    * Simula pagamento bem-sucedido (para desenvolvimento/teste)
    */
   simulatePaymentSuccess: () => {
-    // Simular delay de processamento
     setTimeout(() => {
       window.location.href = `${getReturnUrl()}?payment_success=true&method=simulated`;
     }, 1500);
@@ -104,20 +124,17 @@ export const paymentService = {
       const pendingAnalysis = localStorage.getItem('pending_payment_analysis');
       const pendingTimestamp = localStorage.getItem('pending_payment_timestamp');
       
-      // Verifica se existe um pagamento pendente
       if (!pendingAnalysis || !pendingTimestamp) {
         console.warn('⚠️ Tentativa de acesso sem pagamento pendente');
         return { success: false, cancelled: false };
       }
       
-      // Verifica se o timestamp é recente (máximo 30 minutos)
       const timestamp = parseInt(pendingTimestamp, 10);
       const now = Date.now();
       const thirtyMinutes = 30 * 60 * 1000;
       
       if (now - timestamp > thirtyMinutes) {
         console.warn('⚠️ Pagamento pendente expirado');
-        // Limpar dados expirados
         localStorage.removeItem('pending_payment_analysis');
         localStorage.removeItem('pending_payment_timestamp');
         return { success: false, cancelled: false };
@@ -149,7 +166,8 @@ export const paymentService = {
    */
   isConfigured: () => ({
     stripe: !!STRIPE_PAYMENT_LINK,
-    mercadopago: !!MERCADOPAGO_PAYMENT_LINK,
-    any: !!STRIPE_PAYMENT_LINK || !!MERCADOPAGO_PAYMENT_LINK
+    pix: true, // AbacatePay via API sempre disponível (em prod)
+    any: !!STRIPE_PAYMENT_LINK || !import.meta.env.DEV
   })
 };
+
