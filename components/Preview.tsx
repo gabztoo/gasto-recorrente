@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Lock, Check, AlertCircle, ArrowRight, TrendingDown, Ban, Shield, Tv, Music, Gamepad2, Dumbbell, Cloud, CreditCard } from 'lucide-react';
-import { AnalysisResult, User } from '../types';
+import { AnalysisResult } from '../types';
 import PaymentModal from './PaymentModal';
 
 interface PreviewProps {
   data: AnalysisResult;
-  user: User | null;
-  onRequireLogin: () => void;
   onPaymentSuccess: () => void;
 }
 
@@ -50,14 +48,11 @@ const getServiceStyle = (name: string) => {
   return { bg: 'bg-white/10', text: 'text-gray-300', border: 'border-white/20' };
 };
 
-const Preview: React.FC<PreviewProps> = ({ data, user, onRequireLogin, onPaymentSuccess }) => {
+const Preview: React.FC<PreviewProps> = ({ data, onPaymentSuccess }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
   const handlePaymentClick = () => {
-    if (!user) {
-      onRequireLogin();
-      return;
-    }
+    // Vai direto para pagamento, sem exigir login
     setShowPaymentModal(true);
   };
 

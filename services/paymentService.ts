@@ -89,6 +89,16 @@ export const paymentService = {
     const isCancelled = params.get('payment_cancelled') === 'true';
     const method = params.get('method') || undefined;
 
+    console.log('🔍 checkPaymentReturn:', { 
+      url: window.location.href,
+      isSuccess, 
+      isCancelled, 
+      method,
+      pendingAnalysis: localStorage.getItem('pending_payment_analysis'),
+      pendingTimestamp: localStorage.getItem('pending_payment_timestamp'),
+      analysisCache: !!localStorage.getItem('subdetector_analysis_cache')
+    });
+
     // VALIDAÇÃO DE SEGURANÇA: evita que usuários pulem o paywall
     if (isSuccess) {
       const pendingAnalysis = localStorage.getItem('pending_payment_analysis');
@@ -96,7 +106,7 @@ export const paymentService = {
       
       // Verifica se existe um pagamento pendente
       if (!pendingAnalysis || !pendingTimestamp) {
-        console.warn('Tentativa de acesso sem pagamento pendente');
+        console.warn('⚠️ Tentativa de acesso sem pagamento pendente');
         return { success: false, cancelled: false };
       }
       
@@ -106,12 +116,14 @@ export const paymentService = {
       const thirtyMinutes = 30 * 60 * 1000;
       
       if (now - timestamp > thirtyMinutes) {
-        console.warn('Pagamento pendente expirado');
+        console.warn('⚠️ Pagamento pendente expirado');
         // Limpar dados expirados
         localStorage.removeItem('pending_payment_analysis');
         localStorage.removeItem('pending_payment_timestamp');
         return { success: false, cancelled: false };
       }
+      
+      console.log('✅ Pagamento válido, redirecionando para dashboard');
     }
 
     return { success: isSuccess, cancelled: isCancelled, method };

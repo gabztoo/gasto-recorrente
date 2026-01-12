@@ -1,32 +1,46 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView, AnalysisResult, User } from './types';
+import { AppView, AnalysisResult } from './types';
 import Hero from './components/Hero';
 import UploadSection from './components/UploadSection';
 import Preview from './components/Preview';
 import Dashboard from './components/Dashboard';
-import LoginModal from './components/LoginModal';
 import { analyzeStatement } from './services/geminiService';
-import { authService } from './services/authService';
-import { historyService } from './services/historyService';
 import { paymentService } from './services/paymentService';
-import { LayoutDashboard, LogOut, User as UserIcon, Hexagon, CheckCircle, XCircle } from 'lucide-react';
+import { Hexagon, CheckCircle, XCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.LANDING);
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Verificar se há um relatório salvo na URL (hash routing)
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
+    const checkSavedReport = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/report/')) {
+        const reportId = hash.replace('#/report/', '');
+        const savedReport = localStorage.getItem(`report_${reportId}`);
+        if (savedReport) {
+          try {
+            const parsed = JSON.parse(savedReport);
+            setAnalysisData(parsed);
+            setView(AppView.DASHBOARD);
+          } catch (e) {
+            console.error('Erro ao carregar relatório:', e);
+          }
+        }
+      }
+    };
     
+    checkSavedReport();
+    window.addEventListener('hashchange', checkSavedReport);
+    return () => window.removeEventListener('hashchange', checkSavedReport);
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
         setScrolled(window.scrollY > 20);
     };
@@ -39,20 +53,18 @@ const App: React.FC = () => {
     const paymentResult = paymentService.checkPaymentReturn();
     
     if (paymentResult.success) {
-      const currentUser = authService.getCurrentUser();
       const savedData = localStorage.getItem('subdetector_analysis_cache');
-      
-      console.log('Payment return detected:', { currentUser: !!currentUser, savedData: !!savedData });
       
       if (savedData) {
         try {
           const parsed = JSON.parse(savedData);
           setAnalysisData(parsed);
           
-          if (currentUser) {
-            setUser(currentUser);
-            historyService.saveToHistory(currentUser.id, parsed);
-          }
+          // Salvar relatório com ID único para acesso via URL
+          localStorage.setItem(`report_${parsed.id}`, savedData);
+          
+          // Atualizar URL para o relatório
+          window.location.hash = `#/report/${parsed.id}`;
           
           setView(AppView.DASHBOARD);
           
@@ -61,7 +73,6 @@ const App: React.FC = () => {
                              paymentResult.method === 'stripe' ? 'Cartão' : 'Pagamento';
           setNotification({ type: 'success', message: `${methodLabel} confirmado! Relatório desbloqueado.` });
           
-          // Limpar notificação após 5 segundos
           setTimeout(() => setNotification(null), 5000);
         } catch (e) {
           console.error("Erro ao recuperar dados salvos", e);
@@ -69,14 +80,13 @@ const App: React.FC = () => {
           setTimeout(() => setNotification(null), 5000);
         }
       } else {
-        console.warn('Nenhuma análise encontrada no cache');
         setNotification({ type: 'error', message: 'Sessão expirada. Por favor, faça a análise novamente.' });
         setTimeout(() => setNotification(null), 5000);
       }
       
-      // Limpar dados de pagamento pendente e URL
-      paymentService.clearPendingPayment();
-      window.history.replaceState({}, '', window.location.pathname);
+      // Limpar query params mas manter hash
+      const currentHash = window.location.hash;
+      window.history.replaceState({}, '', window.location.pathname + currentHash);
     }
     
     if (paymentResult.cancelled) {
@@ -102,47 +112,25 @@ const App: React.FC = () => {
     setView(AppView.PREVIEW);
   };
 
-  const handleLoginSuccess = (loggedInUser: User) => {
-    setUser(loggedInUser);
-    setShowLoginModal(false);
-  };
-
-  const handleLogout = () => {
-    authService.logout();
-    setUser(null);
-    setView(AppView.LANDING);
-  };
-
   const handlePaymentSuccess = () => {
-    if (user && analysisData) {
-      historyService.saveToHistory(user.id, analysisData);
+    if (analysisData) {
+      // Salvar relatório com ID único
+      localStorage.setItem(`report_${analysisData.id}`, JSON.stringify(analysisData));
+      window.location.hash = `#/report/${analysisData.id}`;
       setView(AppView.DASHBOARD);
     }
   };
 
-  const handleHistorySelect = (historyItem: AnalysisResult) => {
-    setAnalysisData(historyItem);
-  };
-
   const handleReset = () => {
     setAnalysisData(null);
+    window.location.hash = '';
     setView(AppView.UPLOAD);
   };
 
   const goHome = () => {
     setAnalysisData(null);
+    window.location.hash = '';
     setView(AppView.LANDING);
-  }
-
-  const handleGoToHistory = () => {
-    if (user) {
-      const history = historyService.getHistory(user.id);
-      if (history.length > 0) {
-        // Carrega a análise mais recente
-        setAnalysisData(history[0]);
-        setView(AppView.DASHBOARD);
-      }
-    }
   }
 
   return (
@@ -170,7 +158,7 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {/* Tech Navbar */}
+      {/* Tech Navbar - Simplificado, sem login */}
       <nav className={`fixed w-full z-50 transition-all duration-200 border-b ${scrolled ? 'bg-background/90 border-white/10 backdrop-blur-md py-3' : 'bg-transparent border-transparent py-5'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
@@ -181,42 +169,13 @@ const App: React.FC = () => {
               <span className="font-bold text-lg text-white tracking-tight">Gasto<span className="text-gray-400">Recorrente</span></span>
             </div>
             
+            {/* Área direita vazia por enquanto - pode adicionar links futuramente */}
             <div className="flex items-center space-x-4">
-               {user ? (
-                 <div className="flex items-center space-x-4">
-                   {/* Botão de acesso ao histórico */}
-                   {historyService.getHistory(user.id).length > 0 && view !== AppView.DASHBOARD && (
-                     <button 
-                       onClick={handleGoToHistory}
-                       className="flex items-center text-sm font-medium text-gray-400 hover:text-primary transition-colors"
-                       title="Meu Histórico"
-                     >
-                       <LayoutDashboard className="w-4 h-4 mr-1" />
-                       <span className="hidden sm:inline">Histórico</span>
-                     </button>
-                   )}
-                   <div className="hidden md:flex flex-col text-right">
-                      <span className="text-[10px] text-gray-500 font-mono uppercase">User Session</span>
-                      <span className="text-sm font-semibold text-white leading-none">{user.name}</span>
-                   </div>
-                   <div className="relative">
-                       <img src={user.avatar} className="h-8 w-8 rounded-full border border-white/10 grayscale hover:grayscale-0 transition-all" alt="Avatar" />
-                   </div>
-                   <button onClick={handleLogout} className="text-gray-500 hover:text-white transition-colors" title="Sair">
-                      <LogOut className="w-5 h-5" />
-                   </button>
-                 </div>
-               ) : (
-                 view !== AppView.LANDING && (
-                    <button 
-                      onClick={() => setShowLoginModal(true)}
-                      className="text-sm font-medium text-white hover:text-primary transition-colors flex items-center"
-                    >
-                      <UserIcon className="w-4 h-4 mr-2" />
-                      Entrar
-                    </button>
-                 )
-               )}
+              {view === AppView.DASHBOARD && analysisData && (
+                <div className="text-xs font-mono text-gray-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                  ID: {analysisData.id.substring(0, 8)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -233,8 +192,6 @@ const App: React.FC = () => {
         {view === AppView.PREVIEW && analysisData && (
           <Preview 
             data={analysisData} 
-            user={user}
-            onRequireLogin={() => setShowLoginModal(true)}
             onPaymentSuccess={handlePaymentSuccess}
           />
         )}
@@ -242,20 +199,10 @@ const App: React.FC = () => {
         {view === AppView.DASHBOARD && analysisData && (
           <Dashboard 
             currentAnalysis={analysisData} 
-            user={user}
             onReset={handleReset} 
-            onSelectHistory={handleHistorySelect}
           />
         )}
       </main>
-
-      {/* Login Modal */}
-      {showLoginModal && (
-        <LoginModal 
-          onClose={() => setShowLoginModal(false)}
-          onLoginSuccess={handleLoginSuccess}
-        />
-      )}
 
       {/* Minimal Footer */}
       <footer className="border-t border-white/5 py-8 mt-10">
