@@ -1,9 +1,19 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 // POST /api/create-billing
 // Cria uma cobrança no AbacatePay e retorna a URL de pagamento
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+import type { IncomingMessage, ServerResponse } from 'http';
+
+interface RequestBody {
+  analysisId?: string;
+}
+
+export default async function handler(
+  req: IncomingMessage & { body?: RequestBody; method?: string },
+  res: ServerResponse & { 
+    status: (code: number) => { json: (data: unknown) => void };
+    json: (data: unknown) => void;
+  }
+) {
   // Apenas POST é permitido
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -17,12 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { analysisId } = req.body;
+    const analysisId = req.body?.analysisId;
     
     // URL base do site (configurada na Vercel)
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
+    const baseUrl = process.env.SITE_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://gastorecorrente.shop');
     
     const response = await fetch('https://api.abacatepay.com/v1/billing/create', {
       method: 'POST',
