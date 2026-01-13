@@ -9,7 +9,7 @@ interface PreviewProps {
   onPaymentSuccess: () => void;
 }
 
-const PRICE = 10.00; // Preço do relatório em R$
+const PRICE = 5.00; // Preço do relatório em R$
 
 const Preview: React.FC<PreviewProps> = ({ data, onPaymentSuccess }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);

@@ -78,7 +78,7 @@ const createGeminiProvider = (model: string): AIProvider => ({
       config: {
         responseMimeType: "application/json",
         responseSchema: subscriptionSchema,
-        temperature: 0.1,
+        temperature: 0,
         maxOutputTokens: 1024,
       }
     });
@@ -116,7 +116,7 @@ const createGroqProvider = (): AIProvider => ({
             content: getPrompt(cleanText)
           }
         ],
-        temperature: 0.1,
+        temperature: 0,
         max_tokens: 1024,
         response_format: { type: "json_object" }
       })
@@ -167,7 +167,7 @@ const createOpenRouterProvider = (): AIProvider => ({
             content: getPrompt(cleanText)
           }
         ],
-        temperature: 0.1,
+        temperature: 0,
         max_tokens: 1024
       })
     });
