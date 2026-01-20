@@ -83,14 +83,17 @@ const ALTERNATIVES_DATABASE: Record<string, Alternative[]> = {
   
   // IA
   'chatgpt': [
+    { name: 'Antigravity', type: 'free', description: 'IDE para IA', url: 'https://antigravity.ai' },
     { name: 'ChatGPT Free', type: 'free', description: 'GPT-3.5 é gratuito e bom para maioria dos casos' },
-    { name: 'Claude', type: 'free', description: 'IA da Anthropic com plano free', url: 'https://claude.ai' },
+    { name: 'Claude', type: 'free', description: 'IA da Anthropic gratuito', url: 'https://claude.ai' },
     { name: 'Gemini', type: 'free', description: 'IA do Google gratuita', url: 'https://gemini.google.com' },
     { name: 'Perplexity', type: 'free', description: 'IA para pesquisas', url: 'https://perplexity.ai' },
   ],
   'openai': [
     { name: 'ChatGPT Free', type: 'free', description: 'Use a versão gratuita' },
-    { name: 'Claude/Gemini', type: 'free', description: 'Alternativas gratuitas de qualidade' },
+    { name: 'Claude/Gemini', type: 'free', description: 'Alternativas gratuitas de qualidade'},
+    { name: 'Groq', type: 'free', description: 'Plano gratuito para uso pessoal', url: 'https://groq.com' },
+    { name: 'OpenRouter', type: 'free', description: 'Plano gratuito para uso pessoal', url: 'https://openrouter.ai' },
   ],
   
   // Cloud Storage

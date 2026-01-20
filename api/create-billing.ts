@@ -1,7 +1,10 @@
 // POST /api/create-billing
 // Cria uma cobrança no AbacatePay e retorna a URL de pagamento
+// PROTEGIDO: CSRF + Rate Limiting + CORS
 
 import type { IncomingMessage, ServerResponse } from 'http';
+import { rateLimitService, getClientIP } from '../services/rateLimitService';
+import { validateCSRFToken } from '../services/csrfService';
 
 interface RequestBody {
   analysisId?: string;
@@ -9,7 +12,7 @@ interface RequestBody {
 
 export default async function handler(
   req: IncomingMessage & { body?: RequestBody; method?: string },
-  res: ServerResponse & { 
+  res: ServerResponse & {
     status: (code: number) => { json: (data: unknown) => void };
     json: (data: unknown) => void;
   }
@@ -19,8 +22,28 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Validação CORS (aceita apenas requisições do próprio site)
+  const origin = req.headers['origin'] || req.headers['referer'] || '';
+  const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+
+  if (origin && !origin.startsWith(siteUrl) && !origin.includes('localhost')) {
+    console.warn('⚠️ Origem suspeita:', origin);
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // Validação CSRF
+  if (!validateCSRFToken(req)) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+
+  // Rate limiting (10 requisições por minuto)
+  const clientIP = getClientIP(req);
+  if (!rateLimitService.checkLimit(clientIP, { maxRequests: 10, windowMs: 60000 })) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
+
   const apiKey = process.env.ABACATEPAY_API_KEY;
-  
+
   if (!apiKey) {
     console.error('ABACATEPAY_API_KEY não configurada');
     return res.status(500).json({ error: 'Payment service not configured' });
@@ -28,11 +51,11 @@ export default async function handler(
 
   try {
     const analysisId = req.body?.analysisId;
-    
+
     // URL base do site (configurada na Vercel)
-    const baseUrl = process.env.SITE_URL || 
+    const baseUrl = process.env.SITE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://gastorecorrente.shop');
-    
+
     const response = await fetch('https://api.abacatepay.com/v1/billing/create', {
       method: 'POST',
       headers: {
@@ -60,7 +83,7 @@ export default async function handler(
     });
 
     const data = await response.json();
-    
+
     if (data.error) {
       console.error('AbacatePay error:', data.error);
       return res.status(400).json({ error: data.error });
