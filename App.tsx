@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+
   // Estado para animação de análise
   const [analyzingProgress, setAnalyzingProgress] = useState<string[]>([]);
 

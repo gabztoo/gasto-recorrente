@@ -1,9 +1,10 @@
 // POST /api/create-billing
-// Cria uma cobrança PIX com fallback automático
-// Woovi (principal) → AbacatePay (fallback)
+// Cria uma cobrança no AbacatePay e retorna a URL de pagamento
 // PROTEGIDO: CSRF + Rate Limiting + CORS
 
 import type { IncomingMessage, ServerResponse } from 'http';
+import { rateLimitService, getClientIP } from '../services/rateLimitService';
+import { validateCSRFToken } from '../services/csrfService';
 import { rateLimitService, getClientIP } from '../services/rateLimitService';
 import { validateCSRFToken } from '../services/csrfService';
 
@@ -24,6 +25,26 @@ export default async function handler(
   // Apenas POST é permitido
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Validação CORS (aceita apenas requisições do próprio site)
+  const origin = req.headers['origin'] || req.headers['referer'] || '';
+  const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+
+  if (origin && !origin.startsWith(siteUrl) && !origin.includes('localhost')) {
+    console.warn('⚠️ Origem suspeita:', origin);
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // Validação CSRF
+  if (!validateCSRFToken(req)) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+
+  // Rate limiting (10 requisições por minuto)
+  const clientIP = getClientIP(req);
+  if (!rateLimitService.checkLimit(clientIP, { maxRequests: 10, windowMs: 60000 })) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
   // Validação CORS (aceita apenas requisições do próprio site)
