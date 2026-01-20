@@ -1,5 +1,6 @@
 // POST /api/create-billing
-// Cria uma cobrança no AbacatePay e retorna a URL de pagamento
+// Cria uma cobrança PIX com fallback automático
+// Woovi (principal) → AbacatePay (fallback)
 // PROTEGIDO: CSRF + Rate Limiting + CORS
 
 import type { IncomingMessage, ServerResponse } from 'http';
@@ -9,6 +10,9 @@ import { validateCSRFToken } from '../services/csrfService';
 interface RequestBody {
   analysisId?: string;
 }
+
+const WOOVI_API_KEY = process.env.WOOVI_API_KEY || '';
+const ABACATEPAY_API_KEY = process.env.ABACATEPAY_API_KEY || '';
 
 export default async function handler(
   req: IncomingMessage & { body?: RequestBody; method?: string },
@@ -42,24 +46,81 @@ export default async function handler(
     return res.status(429).json({ error: 'Too many requests. Try again later.' });
   }
 
-  const apiKey = process.env.ABACATEPAY_API_KEY;
+  const analysisId = req.body?.analysisId;
+  const baseUrl = process.env.SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://gastorecorrente.shop');
 
-  if (!apiKey) {
-    console.error('ABACATEPAY_API_KEY não configurada');
+  // ========== TENTATIVA 1: WOOVI (PRINCIPAL) ==========
+  if (WOOVI_API_KEY) {
+    try {
+      console.log('🎯 Tentando Woovi (principal)...');
+
+      const wooviResponse = await fetch('https://api.woovi.com/api/v1/charge', {
+        method: 'POST',
+        headers: {
+          'Authorization': WOOVI_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          correlationID: analysisId || `analysis-${Date.now()}`,
+          value: 500, // R$ 5,00 em centavos
+          comment: 'Análise Completa de Assinaturas - Gasto Recorrente',
+          customer: {
+            name: 'Cliente Gasto Recorrente',
+            email: 'cliente@gastorecorrente.shop'
+          },
+          additionalInfo: [
+            {
+              key: 'Produto',
+              value: 'Relatório detalhado de gastos recorrentes'
+            },
+            {
+              key: 'analysisId',
+              value: analysisId || ''
+            }
+          ]
+        })
+      });
+
+      const wooviData = await wooviResponse.json();
+
+      if (wooviResponse.ok && wooviData.charge) {
+        console.log('✅ Cobrança criada com sucesso via Woovi');
+
+        return res.status(200).json({
+          success: true,
+          provider: 'woovi',
+          chargeId: wooviData.charge.correlationID,
+          paymentUrl: wooviData.charge.brCode || wooviData.charge.qrCodeImage,
+          qrCode: wooviData.charge.brCode,
+          qrCodeImage: wooviData.charge.qrCodeImage,
+          status: wooviData.charge.status,
+          value: wooviData.charge.value
+        });
+      }
+
+      console.warn('⚠️ Woovi falhou, tentando fallback para AbacatePay...', wooviData);
+    } catch (error) {
+      console.error('❌ Erro ao tentar Woovi:', error);
+      console.log('🔄 Tentando fallback para AbacatePay...');
+    }
+  } else {
+    console.log('⚠️ WOOVI_API_KEY não configurada, usando AbacatePay diretamente');
+  }
+
+  // ========== TENTATIVA 2: ABACATEPAY (FALLBACK) ==========
+  if (!ABACATEPAY_API_KEY) {
+    console.error('Nenhum provedor de pagamento configurado');
     return res.status(500).json({ error: 'Payment service not configured' });
   }
 
   try {
-    const analysisId = req.body?.analysisId;
+    console.log('🔄 Tentando AbacatePay (fallback)...');
 
-    // URL base do site (configurada na Vercel)
-    const baseUrl = process.env.SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://gastorecorrente.shop');
-
-    const response = await fetch('https://api.abacatepay.com/v1/billing/create', {
+    const abacateResponse = await fetch('https://api.abacatepay.com/v1/billing/create', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${ABACATEPAY_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -82,20 +143,23 @@ export default async function handler(
       })
     });
 
-    const data = await response.json();
+    const abacateData = await abacateResponse.json();
 
-    if (data.error) {
-      console.error('AbacatePay error:', data.error);
-      return res.status(400).json({ error: data.error });
+    if (abacateData.error) {
+      console.error('AbacatePay error:', abacateData.error);
+      return res.status(400).json({ error: abacateData.error });
     }
+
+    console.log('✅ Cobrança criada com sucesso via AbacatePay (fallback)');
 
     // Retorna a URL de pagamento
     return res.status(200).json({
       success: true,
-      billingId: data.data?.id,
-      paymentUrl: data.data?.url,
-      amount: data.data?.amount,
-      status: data.data?.status
+      provider: 'abacatepay',
+      billingId: abacateData.data?.id,
+      paymentUrl: abacateData.data?.url,
+      amount: abacateData.data?.amount,
+      status: abacateData.data?.status
     });
 
   } catch (error) {
