@@ -16,7 +16,7 @@ const App: React.FC = () => {
   const [isDemo, setIsDemo] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  
+
   // Estado para animação de análise
   const [analyzingProgress, setAnalyzingProgress] = useState<string[]>([]);
 
@@ -38,7 +38,7 @@ const App: React.FC = () => {
         }
       }
     };
-    
+
     checkSavedReport();
     window.addEventListener('hashchange', checkSavedReport);
     return () => window.removeEventListener('hashchange', checkSavedReport);
@@ -46,7 +46,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-        setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -55,27 +55,27 @@ const App: React.FC = () => {
   // Tratamento de retorno do pagamento
   useEffect(() => {
     const paymentResult = paymentService.checkPaymentReturn();
-    
+
     if (paymentResult.success) {
       const savedData = localStorage.getItem('subdetector_analysis_cache');
-      
+
       if (savedData) {
         try {
           const parsed = JSON.parse(savedData);
           setAnalysisData(parsed);
-          
+
           // Salvar relatório com ID único para acesso via URL
           localStorage.setItem(`report_${parsed.id}`, savedData);
-          
+
           // Atualizar URL para o relatório
           window.location.hash = `#/report/${parsed.id}`;
-          
+
           setView(AppView.DASHBOARD);
-          
-          const methodLabel = paymentResult.method === 'pix' ? 'PIX' : 
-                             paymentResult.method === 'stripe' ? 'Cartão' : 'Pagamento';
+
+          const methodLabel = paymentResult.method === 'pix' ? 'PIX' :
+            paymentResult.method === 'stripe' ? 'Cartão' : 'Pagamento';
           setNotification({ type: 'success', message: `${methodLabel} confirmado! Relatório desbloqueado.` });
-          
+
           setTimeout(() => setNotification(null), 5000);
         } catch (e) {
           console.error("Erro ao recuperar dados salvos", e);
@@ -86,11 +86,11 @@ const App: React.FC = () => {
         setNotification({ type: 'error', message: 'Sessão expirada. Por favor, faça a análise novamente.' });
         setTimeout(() => setNotification(null), 5000);
       }
-      
+
       const currentHash = window.location.hash;
       window.history.replaceState({}, '', window.location.pathname + currentHash);
     }
-    
+
     if (paymentResult.cancelled) {
       setNotification({ type: 'error', message: 'Pagamento cancelado. Tente novamente quando quiser.' });
       setTimeout(() => setNotification(null), 5000);
@@ -103,7 +103,7 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setIsDemo(false);
     setAnalyzingProgress([]);
-    
+
     // Simular progresso enquanto analisa
     const progressMessages = [
       'Lendo extrato...',
@@ -113,7 +113,7 @@ const App: React.FC = () => {
       'Calculando custos anuais...',
       'Finalizando análise...'
     ];
-    
+
     let progressIndex = 0;
     const progressInterval = setInterval(() => {
       if (progressIndex < progressMessages.length) {
@@ -121,14 +121,14 @@ const App: React.FC = () => {
         progressIndex++;
       }
     }, 800);
-    
+
     const result = await analyzeStatement(text);
-    
+
     clearInterval(progressInterval);
-    
+
     setAnalysisData(result);
     localStorage.setItem('subdetector_analysis_cache', JSON.stringify(result));
-    
+
     setIsAnalyzing(false);
     setAnalyzingProgress([]);
     setView(AppView.PREVIEW);
@@ -168,40 +168,40 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-primary/30 selection:text-white">
-      
+
       {/* Toast Notification */}
       {notification && (
         <div className={`fixed top-20 right-4 z-[100] flex items-center space-x-3 px-5 py-4 rounded-lg shadow-2xl border animate-slide-in
-          ${notification.type === 'success' 
-            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+          ${notification.type === 'success'
+            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
             : 'bg-red-500/20 border-red-500/30 text-red-400'
           }`}
         >
-          {notification.type === 'success' 
-            ? <CheckCircle className="w-5 h-5" /> 
+          {notification.type === 'success'
+            ? <CheckCircle className="w-5 h-5" />
             : <XCircle className="w-5 h-5" />
           }
           <span className="text-sm font-medium">{notification.message}</span>
-          <button 
-            onClick={() => setNotification(null)} 
+          <button
+            onClick={() => setNotification(null)}
             className="ml-2 opacity-60 hover:opacity-100"
           >
             ×
           </button>
         </div>
       )}
-      
+
       {/* Navbar */}
       <nav className={`fixed w-full z-50 transition-all duration-200 border-b ${scrolled ? 'bg-background/90 border-white/10 backdrop-blur-md py-3' : 'bg-transparent border-transparent py-5'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex-shrink-0 flex items-center cursor-pointer group" onClick={goHome}>
               <div className="mr-3 p-1.5 bg-white text-black rounded-lg">
-                  <Hexagon className="w-5 h-5 fill-current" />
+                <Hexagon className="w-5 h-5 fill-current" />
               </div>
               <span className="font-bold text-lg text-white tracking-tight">Gasto<span className="text-gray-400">Recorrente</span></span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {view === AppView.DASHBOARD && analysisData && (
                 <div className="flex items-center gap-2">
@@ -222,13 +222,13 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-grow pt-24">
-        
+
         {/* Landing com Upload integrado */}
         {view === AppView.LANDING && !isAnalyzing && (
-          <Hero 
-            onAnalyze={handleAnalyze} 
+          <Hero
+            onAnalyze={handleAnalyze}
             onDemo={handleDemo}
-            isAnalyzing={isAnalyzing} 
+            isAnalyzing={isAnalyzing}
           />
         )}
 
@@ -244,12 +244,12 @@ const App: React.FC = () => {
               <h2 className="text-2xl font-bold text-white mb-2">Analisando seu extrato...</h2>
               <p className="text-gray-400">Nossa IA está identificando suas assinaturas</p>
             </div>
-            
+
             {/* Progress Messages */}
             <div className="space-y-2 text-left max-w-md mx-auto">
               {analyzingProgress.map((msg, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="flex items-center gap-3 text-sm text-gray-400 animate-fade-in"
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
@@ -263,31 +263,31 @@ const App: React.FC = () => {
 
         {/* Preview/Paywall */}
         {view === AppView.PREVIEW && analysisData && (
-          <Preview 
-            data={analysisData} 
+          <Preview
+            data={analysisData}
             onPaymentSuccess={handlePaymentSuccess}
           />
         )}
 
         {/* Dashboard */}
         {view === AppView.DASHBOARD && analysisData && (
-          <Dashboard 
-            currentAnalysis={analysisData} 
-            onReset={handleReset} 
+          <Dashboard
+            currentAnalysis={analysisData}
+            onReset={handleReset}
           />
         )}
       </main>
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 mt-10">
-         <div className="max-w-7xl mx-auto px-4 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 font-mono">
-            <p>&copy; {new Date().getFullYear()} Gasto Recorrente Systems.</p>
-            <div className="mt-2 md:mt-0 space-x-6">
-               <span className="hover:text-gray-300 cursor-pointer">TERMS_OF_SVC</span>
-               <span className="hover:text-gray-300 cursor-pointer">PRIVACY_POLICY</span>
-               <span className="hover:text-gray-300 cursor-pointer">STATUS</span>
-            </div>
-         </div>
+        <div className="max-w-7xl mx-auto px-4 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 font-mono">
+          <p>&copy; {new Date().getFullYear()} Gasto Recorrente Systems. Built with <a href="https://react.dev" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 transition-colors">React</a>.</p>
+          <div className="mt-2 md:mt-0 space-x-6">
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">TERMS_OF_SVC</a>
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">PRIVACY_POLICY</a>
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">STATUS</a>
+          </div>
+        </div>
       </footer>
     </div>
   );
