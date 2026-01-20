@@ -1,121 +1,183 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gasto Recorrente - Inteligência Financeira</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['"Inter"', 'sans-serif'],
-              mono: ['"JetBrains Mono"', 'monospace'],
-            },
-            colors: {
-              background: '#09090b', // Zinc 950 - Pure Dark Grey
-              surface: '#18181b', // Zinc 900
-              surfaceHighlight: '#27272a', // Zinc 800
-              border: '#3f3f46', // Zinc 700
-              primary: {
-                DEFAULT: '#6366f1', // Indigo 500 - More sophisticated than neon green
-                hover: '#4f46e5', // Indigo 600
-                light: '#818cf8',
-                glow: 'rgba(99, 102, 241, 0.5)',
-              },
-              success: '#10b981', // Emerald for money only
-              warning: '#f59e0b', // Amber
-              danger: '#ef4444', // Red
-            },
-            backgroundImage: {
-              'grid-pattern': "linear-gradient(to right, #27272a 1px, transparent 1px), linear-gradient(to bottom, #27272a 1px, transparent 1px)",
-            },
-            animation: {
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            },
-          }
-        }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gasto Recorrente - Inteligência Financeira</title>
+  <meta name="description"
+    content="Analise seus extratos bancários e descubra quanto você gasta em assinaturas todo mês. Identifique cobranças recorrentes e economize dinheiro com nossa inteligência financeira." />
+  <link rel="canonical" href="https://gastorecorrente.shop/" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://gastorecorrente.shop/" />
+  <meta property="og:title" content="Gasto Recorrente - Inteligência Financeira" />
+  <meta property="og:description"
+    content="Analise seus extratos bancários e descubra quanto você gasta em assinaturas todo mês. Identifique cobranças recorrentes e economize dinheiro." />
+  <meta property="og:image" content="https://gastorecorrente.shop/logo.png" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://gastorecorrente.shop/" />
+  <meta property="twitter:title" content="Gasto Recorrente - Inteligência Financeira" />
+  <meta property="twitter:description"
+    content="Analise seus extratos bancários e descubra quanto você gasta em assinaturas todo mês. Identifique cobranças recorrentes e economize dinheiro." />
+  <meta property="twitter:image" content="https://gastorecorrente.shop/logo.png" />
+
+  <!-- Schema Markup -->
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Gasto Recorrente",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        },
+        "description": "Ferramenta de inteligência financeira para identificar assinaturas e gastos recorrentes em extratos bancários.",
+        "image": "https://gastorecorrente.shop/logo.png",
+        "url": "https://gastorecorrente.shop/"
       }
     </script>
-    <style>
-      body {
-        background-color: #09090b;
-        color: #f4f4f5;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            background: '#09090b', // Zinc 950 - Pure Dark Grey
+            surface: '#18181b', // Zinc 900
+            surfaceHighlight: '#27272a', // Zinc 800
+            border: '#3f3f46', // Zinc 700
+            primary: {
+              DEFAULT: '#6366f1', // Indigo 500 - More sophisticated than neon green
+              hover: '#4f46e5', // Indigo 600
+              light: '#818cf8',
+              glow: 'rgba(99, 102, 241, 0.5)',
+            },
+            success: '#10b981', // Emerald for money only
+            warning: '#f59e0b', // Amber
+            danger: '#ef4444', // Red
+          },
+          backgroundImage: {
+            'grid-pattern': "linear-gradient(to right, #27272a 1px, transparent 1px), linear-gradient(to bottom, #27272a 1px, transparent 1px)",
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+        }
       }
-      
-      /* Technical Background */
-      .bg-tech-grid {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
-        background-color: #09090b;
-        background-image: radial-gradient(#27272a 1px, transparent 1px);
-        background-size: 24px 24px;
-        mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
-        -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
-        pointer-events: none;
+    }
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Technical Background */
+    .bg-tech-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background-color: #09090b;
+      background-image: radial-gradient(#27272a 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 100%);
+      pointer-events: none;
+    }
+
+    /* Clean Panel - Less Blur, More Solid */
+    .tech-panel {
+      background: rgba(24, 24, 27, 0.8);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tech-panel-highlight {
+      background: rgba(39, 39, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .tech-border {
+      border: 1px solid #27272a;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #09090b;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #3f3f46;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #52525b;
+    }
+
+    /* Animations */
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
       }
 
-      /* Clean Panel - Less Blur, More Solid */
-      .tech-panel {
-        background: rgba(24, 24, 27, 0.8);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
-      
-      .tech-panel-highlight {
-        background: rgba(39, 39, 42, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.2s ease;
+    }
+
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
       }
 
-      .tech-border {
-        border: 1px solid #27272a;
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
+    }
 
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #09090b;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #3f3f46;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #52525b;
-      }
-      
-      /* Animations */
-      @keyframes fade-in {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      
-      @keyframes slide-in {
-        from { opacity: 0; transform: translateX(20px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-      
-      .animate-fade-in {
-        animation: fade-in 0.4s ease forwards;
-      }
-      
-      .animate-slide-in {
-        animation: slide-in 0.3s ease forwards;
-      }
-    </style>
+    .animate-fade-in {
+      animation: fade-in 0.4s ease forwards;
+    }
+
+    .animate-slide-in {
+      animation: slide-in 0.3s ease forwards;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -130,11 +192,32 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div class="bg-tech-grid"></div>
-    <div id="root"></div>
+
+<body>
+  <div class="bg-tech-grid"></div>
+  <noscript>
+    <div style="padding: 20px; color: #fff; max-width: 800px; margin: 0 auto;">
+      <h1>Detector de Assinaturas & Custos Recorrentes</h1>
+      <p>Analise seus extratos bancários e descubra quanto você gasta em assinaturas todo mês. Identifique cobranças
+        recorrentes e economize dinheiro.</p>
+      <h2>Como funciona?</h2>
+      <p>O Gasto Recorrente utiliza inteligência artificial para ler seus extratos bancários (PDF, CSV ou TXT) e
+        identificar padrões de consumo.</p>
+      <ul>
+        <li><strong>Busca Profunda:</strong> Detecta nomes complexos e abreviações comuns em faturas de cartão de
+          crédito.</li>
+        <li><strong>Análise de Recorrência:</strong> Diferencia compras parceladas de assinaturas mensais verdadeiras.
+        </li>
+        <li><strong>Assinaturas Fantasmas:</strong> Encontra serviços que você cancelou mas continuam cobrando.</li>
+      </ul>
+      <p>A ferramenta roda 100% no seu navegador, garantindo privacidade total dos seus dados financeiros. Nenhum dado é
+        enviado para servidores externos.</p>
+    </div>
+  </noscript>
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
