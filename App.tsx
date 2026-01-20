@@ -17,6 +17,7 @@ const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+
   // Estado para animação de análise
   const [analyzingProgress, setAnalyzingProgress] = useState<string[]>([]);
 
@@ -196,10 +197,11 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex-shrink-0 flex items-center cursor-pointer group" onClick={goHome}>
-              <div className="mr-3 p-1.5 bg-white text-black rounded-lg">
-                <Hexagon className="w-5 h-5 fill-current" />
-              </div>
-              <span className="font-bold text-lg text-white tracking-tight">Gasto<span className="text-gray-400">Recorrente</span></span>
+              <img
+                src="/logo.png"
+                alt="Gasto Recorrente"
+                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </div>
 
             <div className="flex items-center space-x-4">
@@ -281,11 +283,11 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 mt-10">
         <div className="max-w-7xl mx-auto px-4 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 font-mono">
-          <p>&copy; {new Date().getFullYear()} Gasto Recorrente Systems. Built with <a href="https://react.dev" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 transition-colors">React</a>.</p>
+          <p>&copy; {new Date().getFullYear()} Gasto Recorrente Systems.</p>
           <div className="mt-2 md:mt-0 space-x-6">
-            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">TERMS_OF_SVC</a>
-            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">PRIVACY_POLICY</a>
-            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">STATUS</a>
+            <span className="hover:text-gray-300 cursor-pointer">TERMS_OF_SVC</span>
+            <span className="hover:text-gray-300 cursor-pointer">PRIVACY_POLICY</span>
+            <span className="hover:text-gray-300 cursor-pointer">STATUS</span>
           </div>
         </div>
       </footer>
