@@ -7,7 +7,7 @@ import Dashboard from './components/Dashboard';
 import { analyzeStatement } from './services/geminiService';
 import { paymentService } from './services/paymentService';
 import { generateDemoData } from './services/demoData';
-import { Hexagon, CheckCircle, XCircle, ScanLine, Tv, Cloud, Gamepad2, Dumbbell, CreditCard } from 'lucide-react';
+import { CheckCircle, XCircle, ScanLine, Tv, Cloud, Gamepad2, Dumbbell, CreditCard } from 'lucide-react';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.LANDING);
@@ -249,7 +249,7 @@ const App: React.FC = () => {
 
             {/* Progress Messages */}
             <div className="space-y-2 text-left max-w-md mx-auto">
-              {analyzingProgress.map((msg, idx) => (
+              {analyzingProgress.map((msg: string, idx: number) => (
                 <div
                   key={idx}
                   className="flex items-center gap-3 text-sm text-gray-400 animate-fade-in"
@@ -285,9 +285,9 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-600 font-mono">
           <p>&copy; {new Date().getFullYear()} Gasto Recorrente Systems.</p>
           <div className="mt-2 md:mt-0 space-x-6">
-            <span className="hover:text-gray-300 cursor-pointer">TERMS_OF_SVC</span>
-            <span className="hover:text-gray-300 cursor-pointer">PRIVACY_POLICY</span>
-            <span className="hover:text-gray-300 cursor-pointer">STATUS</span>
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">TERMS_OF_SVC</a>
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">PRIVACY_POLICY</a>
+            <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">STATUS</a>
           </div>
         </div>
       </footer>
